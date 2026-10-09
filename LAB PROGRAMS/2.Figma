@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BusGo - Bus Ticket Booking</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f4f8;
+    margin: 0;
+    color: #243047;
+}
+
+header {
+    background: #1746a2;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.container {
+    max-width: 750px;
+    margin: 25px auto;
+    padding: 20px;
+}
+
+.screen {
+    display: none;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px #d5dce5;
+}
+
+.screen.active {
+    display: block;
+}
+
+h2 {
+    color: #1746a2;
+}
+
+label {
+    display: block;
+    margin-top: 14px;
+    font-weight: bold;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+button {
+    background: #1746a2;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    margin-top: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0e327a;
+}
+
+.bus-card {
+    border: 1px solid #d5dce5;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.bus-card h3 {
+    margin-top: 0;
+}
+
+.price {
+    color: #16803c;
+    font-weight: bold;
+}
+
+.seat-layout {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.seat {
+    padding: 12px 4px;
+    text-align: center;
+    background: #c8f7d2;
+    border: 1px solid #16803c;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.seat.selected {
+    background: #2563eb;
+    color: white;
+}
+
+.seat.booked {
+    background: #b7bec9;
+    border-color: #7b8491;
+    cursor: not-allowed;
+}
+
+.legend {
+    margin-top: 15px;
+    font-size: 13px;
+}
+
+.success {
+    color: #16803c;
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.summary {
+    background: #f0f4f8;
+    padding: 15px;
+    border-radius: 8px;
+    line-height: 1.8;
+}
+
+@media (max-width: 500px) {
+    .container {
+        padding: 12px;
+    }
+
+    .screen {
+        padding: 16px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>BusGo</h1>
+    <p>Simple Bus Ticket Booking Prototype</p>
+</header>
+
+<div class="container">
+
+    <!-- SCREEN 1: SEARCH BUS -->
+    <section class="screen active" id="home">
+        <h2>Search for Buses</h2>
+
+        <label>From</label>
+        <select id="from">
+            <option>Chennai</option>
+            <option>Bangalore</option>
+            <option>Coimbatore</option>
+            <option>Madurai</option>
+        </select>
+
+        <label>To</label>
+        <select id="to">
+            <option>Bangalore</option>
+            <option>Chennai</option>
+            <option>Coimbatore</option>
+            <option>Madurai</option>
+        </select>
+
+        <label>Journey Date</label>
+        <input type="date" id="date">
+
+        <label>Passengers</label>
+        <select id="passengers">
+            <option value="1">1 Passenger</option>
+            <option value="2">2 Passengers</option>
+            <option value="3">3 Passengers</option>
+            <option value="4">4 Passengers</option>
+        </select>
+
+        <button onclick="searchBuses()">Search Buses</button>
+    </section>
+
+    <!-- SCREEN 2: AVAILABLE BUSES -->
+    <section class="screen" id="buses">
+        <h2>Available Buses</h2>
+        <p id="route"></p>
+
+        <div class="bus-card">
+            <h3>Express Travels</h3>
+            <p>Departure: 09:00 PM</p>
+            <p>Arrival: 05:00 AM</p>
+            <p>Type: AC Sleeper</p>
+            <p class="price">₹850 per seat</p>
+            <button onclick="selectBus('Express Travels', 850)">
+                Select Bus
+            </button>
+        </div>
+
+        <div class="bus-card">
+            <h3>Green Line Travels</h3>
+            <p>Departure: 10:00 PM</p>
+            <p>Arrival: 06:00 AM</p>
+            <p>Type: Non-AC Seater</p>
+            <p class="price">₹600 per seat</p>
+            <button onclick="selectBus('Green Line Travels', 600)">
+                Select Bus
+            </button>
+        </div>
+
+        <button onclick="showScreen('home')">Back</button>
+    </section>
+
+    <!-- SCREEN 3: SEAT SELECTION -->
+    <section class="screen" id="seats">
+        <h2>Select Your Seats</h2>
+
+        <p>Green: Available | Blue: Selected | Grey: Booked</p>
+
+        <div class="seat-layout" id="seatLayout"></div>
+
+        <p id="selectedSeats">Selected seats: None</p>
+        <p id="totalPrice">Total: ₹0</p>
+
+        <h3>Passenger Details</h3>
+
+        <label>Passenger Name</label>
+        <input type="text" id="name" placeholder="Enter your name">
+
+        <label>Age</label>
+        <input type="number" id="age" min="1" max="120"
+               placeholder="Enter your age">
+
+        <button onclick="confirmBooking()">Confirm Booking</button>
+        <button onclick="showScreen('buses')">Back</button>
+    </section>
+
+    <!-- SCREEN 4: BOOKING CONFIRMATION -->
+    <section class="screen" id="confirmation">
+        <p class="success">✓ Booking Successful!</p>
+
+        <h2>Ticket Confirmation</h2>
+
+        <div class="summary" id="bookingSummary"></div>
+
+        <button onclick="restartBooking()">Book Another Ticket</button>
+        <button onclick="window.print()">Print Ticket</button>
+    </section>
+
+</div>
+
+<script>
+let selectedBus = "";
+let price = 0;
+let selectedSeats = [];
+let bookingId = "";
+
+const bookedSeats = [3, 7, 12, 16];
+
+function showScreen(screenId) {
+    document.querySelectorAll(".screen").forEach(screen => {
+        screen.classList.remove("active");
+    });
+
+    document.getElementById(screenId).classList.add("active");
+}
+
+function searchBuses() {
+    const from = document.getElementById("from").value;
+    const to = document.getElementById("to").value;
+    const date = document.getElementById("date").value;
+
+    if (from === to) {
+        alert("Departure and destination must be different.");
+        return;
+    }
+
+    if (!date) {
+        alert("Please select your journey date.");
+        return;
+    }
+
+    if (date < new Date().toLocaleDateString("en-CA")) {
+        alert("Please select today or a future date.");
+        return;
+    }
+
+    document.getElementById("route").textContent =
+        from + " → " + to + " | " + date;
+
+    showScreen("buses");
+}
+
+function selectBus(busName, busPrice) {
+    selectedBus = busName;
+    price = busPrice;
+    selectedSeats = [];
+
+    createSeats();
+    showScreen("seats");
+}
+
+function createSeats() {
+    const layout = document.getElementById("seatLayout");
+    layout.innerHTML = "";
+
+    for (let i = 1; i <= 20; i++) {
+        const seat = document.createElement("button");
+
+        seat.className = "seat";
+        seat.textContent = "S" + i;
+        seat.type = "button";
+
+        if (bookedSeats.includes(i)) {
+            seat.classList.add("booked");
+            seat.disabled = true;
+        }
+
+        seat.onclick = function() {
+            toggleSeat(i, seat);
+        };
+
+        layout.appendChild(seat);
+    }
+
+    updateTotal();
+}
+
+function toggleSeat(number, element) {
+    if (selectedSeats.includes(number)) {
+        selectedSeats = selectedSeats.filter(
+            seat => seat !== number
+        );
+
+        element.classList.remove("selected");
+    } else {
+        const maxPassengers = Number(
+            document.getElementById("passengers").value
+        );
+
+        if (selectedSeats.length >= maxPassengers) {
+            alert("You can select up to " + maxPassengers + " seats.");
+            return;
+        }
+
+        selectedSeats.push(number);
+        element.classList.add("selected");
+    }
+
+    updateTotal();
+}
+
+function updateTotal() {
+    document.getElementById("selectedSeats").textContent =
+        "Selected seats: " +
+        (selectedSeats.length
+            ? selectedSeats.map(s => "S" + s).join(", ")
+            : "None");
+
+    document.getElementById("totalPrice").textContent =
+        "Total: ₹" + (selectedSeats.length * price);
+}
+
+function confirmBooking() {
+    const name = document.getElementById("name").value.trim();
+    const age = Number(document.getElementById("age").value);
+    const date = document.getElementById("date").value;
+    const passengerCount = Number(
+        document.getElementById("passengers").value
+    );
+
+    if (!name || !age || age < 1 || age > 120) {
+        alert("Please enter a valid passenger name and age.");
+        return;
+    }
+
+    if (selectedSeats.length === 0) {
+        alert("Please select at least one seat.");
+        return;
+    }
+
+    if (selectedSeats.length !== passengerCount) {
+        alert("Please select exactly " + passengerCount + " seat(s).");
+        return;
+    }
+
+    bookingId = "BG" + Date.now().toString().slice(-8);
+
+    document.getElementById("bookingSummary").innerHTML = `
+        <strong>Booking ID:</strong> ${bookingId}<br>
+        <strong>Passenger:</strong> ${escapeHTML(name)}<br>
+        <strong>Age:</strong> ${age}<br>
+        <strong>Bus:</strong> ${escapeHTML(selectedBus)}<br>
+        <strong>Route:</strong> ${escapeHTML(
+            document.getElementById("from").value
+        )} → ${escapeHTML(document.getElementById("to").value)}<br>
+        <strong>Journey Date:</strong> ${date}<br>
+        <strong>Seats:</strong> ${selectedSeats
+            .map(s => "S" + s).join(", ")}<br>
+        <strong>Total Amount:</strong> ₹${selectedSeats.length * price}
+    `;
+
+    selectedSeats.forEach(seat => bookedSeats.push(seat));
+
+    showScreen("confirmation");
+}
+
+function escapeHTML(value) {
+    return value.replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+function restartBooking() {
+    selectedBus = "";
+    price = 0;
+    selectedSeats = [];
+
+    document.getElementById("name").value = "";
+    document.getElementById("age").value = "";
+    document.getElementById("date").value = "";
+
+    showScreen("home");
+}
+</script>
+
+</body>
+</html>
